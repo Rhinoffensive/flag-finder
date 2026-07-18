@@ -40,16 +40,24 @@ npm run find -- --lat 41.0082 --lon 28.9784 --tz Europe/Istanbul --days 90
 
 ## How scenes are scored (0–100)
 
-Weighted geometric mean — one bad component sinks the score:
+`score = quality × concave-side gate`
+
+The **gate** is the flag's defining constraint — the star must stand on the
+crescent's concave side. It multiplies the whole score: 1.0 centered in the
+opening, ~0.72 at a horn tip, and **zero** by 15° past the horns. Moments with
+the star behind the lit limb are culled outright, no matter how bright, thin
+and close the pairing is. Each card shows the gate and quality components as
+bars.
+
+**Quality** is a weighted geometric mean — one bad component sinks it:
 
 | Component | Weight | Ideal |
 | --- | --- | --- |
-| Crescent thinness | 0.24 | ~18% illuminated |
-| Angular separation | 0.21 | ~2.5° |
-| Companion brightness | 0.21 | Venus-class (mag −4) |
-| Flag geometry | 0.18 | companion on the crescent's **concave side**: 1.0 centered in the opening, 0.55 at a horn tip, fading fast once it slips behind the lit limb — a star behind the crescent's back is the anti-flag |
-| Altitude | 0.10 | 25°+ above horizon |
-| Sky darkness | 0.06 | Sun 12°+ below horizon |
+| Crescent thinness | 0.29 | ~18% illuminated |
+| Angular separation | 0.26 | ~2.5° |
+| Companion brightness | 0.26 | Venus-class (mag −4) |
+| Altitude | 0.12 | 25°+ above horizon |
+| Sky darkness | 0.07 | Sun 12°+ below horizon |
 
 The finder samples every 10 minutes across each night, requires the Sun below
 −5°, the Moon under 45% lit and above 3° altitude, and companions within 14°.

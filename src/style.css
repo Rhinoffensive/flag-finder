@@ -133,6 +133,14 @@ tr.below-head td { color: var(--dim); font-size: 11.5px; text-transform: upperca
 
 .dim { color: var(--dim); }
 
+/* ---------- score breakdown bars ---------- */
+.parts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 12px; margin-top: 10px; }
+.part label { display: block; font-size: 9.5px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+.pbar { display: block; height: 4px; background: var(--panel-2); border-radius: 2px; overflow: hidden; }
+.pbar i { display: block; height: 100%; background: #5b7fc7; }
+.part.geo label { color: var(--red-soft); }
+.part.geo .pbar i { background: var(--red); }
+
 /* ---------- calendar button ---------- */
 .gcal {
   margin-left: auto; font-size: 11.5px; font-weight: 600; text-decoration: none;

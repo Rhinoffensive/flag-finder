@@ -105,9 +105,21 @@ function renderResults() {
   el.innerHTML = list.map((ev) => {
     const [label, cls] = grade(ev.score)
     const past = ev.time < Date.now()
-    const geomNote = ev.geomMode === 'opening' ? '· star in the crescent’s opening ✓'
-      : ev.geomMode === 'horn' ? '· star beside a horn tip ✓'
-      : '· star behind the crescent’s back'
+    const geomNote = ev.geomMode === 'opening'
+      ? '· star in the crescent’s opening ✓'
+      : '· star beside a horn tip ✓'
+    const bars = [
+      ['concave', ev.gate, true],
+      ['crescent', ev.parts.crescent],
+      ['closeness', ev.parts.sep],
+      ['brightness', ev.parts.bright],
+      ['altitude', ev.parts.alt],
+      ['darkness', ev.parts.dark],
+    ].map(([label, v, geo]) => `
+      <span class="part ${geo ? 'geo' : ''}" title="${label}: ${Math.round(v * 100)}%">
+        <label>${label}</label>
+        <span class="pbar"><i style="width:${Math.round(v * 100)}%"></i></span>
+      </span>`).join('')
     return `
     <article class="card ${past ? 'past' : ''}">
       <div class="scene">${renderScene(ev)}</div>
@@ -127,6 +139,7 @@ function renderResults() {
           Look ${compass(ev.moonAz)} (az ${Math.round(ev.moonAz)}°), ${Math.round(ev.moonAlt)}° above the horizon ·
           window ${fmtTime(ev.windowStart)}–${fmtTime(ev.windowEnd)}
         </p>
+        <div class="parts">${bars}</div>
       </div>
     </article>`
   }).join('')

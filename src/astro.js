@@ -148,34 +148,36 @@ const clamp01 = (x) => Math.min(1, Math.max(0, x))
 const smooth = (x, a, b) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
 const angDiff = (a, b) => { let d = (a - b) % (2 * Math.PI); if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI; return Math.abs(d) }
 
-// Weighted geometric mean: any single terrible component sinks the score,
-// which is right — a full moon next to Venus is pretty, but it is not a flag.
+// Weighted geometric mean over the QUALITY components: any single terrible one
+// sinks the score — a full moon next to Venus is pretty, but it is not a flag.
+// The concave-side gate multiplies this from outside (see geomGate above).
 function flagScore(parts) {
-  const weights = { crescent: 0.24, sep: 0.21, bright: 0.21, geom: 0.18, alt: 0.10, dark: 0.06 }
+  const weights = { crescent: 0.293, sep: 0.256, bright: 0.256, alt: 0.122, dark: 0.073 }
   let ln = 0
   for (const [k, w] of Object.entries(weights)) ln += w * Math.log(Math.max(0.02, parts[k]))
   return 100 * Math.exp(ln)
 }
 
-// The flag puts the star on the crescent's CONCAVE side — framed between the
-// horns, ideally centered on the opening; a companion behind the lit back is
-// the anti-flag. geomDelta measures the angle from the opening direction:
-// 0 = centered in the opening, 90° = at a horn tip, 180° = behind the back.
-export function scoreParts({ fraction, sep, mag, geomDelta, minAlt, sunAlt }) {
-  const c = Math.cos(geomDelta)
-  const geom = c >= 0
-    ? 0.55 + 0.45 * c          // concave side: 1.0 opening-center … 0.55 horn tip
-    : 0.55 * (1 + c) ** 1.6    // convex side: fades fast behind the lit limb
+// The flag's defining constraint: the star stands on the crescent's CONCAVE
+// side. Geometry is therefore a multiplicative GATE on the whole score, not a
+// tradeable ingredient — 1.0 centered in the opening, ~0.72 at a horn tip,
+// and zero by 15° past the horns. A star behind the lit limb scores 0 no
+// matter how bright, thin and close the pairing is; those moments are culled.
+// geomDelta: 0 = centered in the opening, 90° = horn tip, 180° = behind.
+export function geomGate(geomDelta) {
+  const deg = geomDelta * R2D
+  if (deg <= 90) return 0.72 + 0.28 * Math.cos(geomDelta)
+  if (deg >= 105) return 0
+  return 0.72 * ((105 - deg) / 15) ** 1.5
+}
+
+export function scoreParts({ fraction, sep, mag, minAlt, sunAlt }) {
   return {
-    parts: {
-      crescent: gauss(fraction, 0.18, 0.13),
-      sep: gauss(sep, 2.5, 4.0),
-      bright: clamp01(0.15 + 0.85 * (1.6 - mag) / 5.1),
-      geom,
-      alt: 0.25 + 0.75 * smooth(minAlt, 3, 25),
-      dark: 0.45 + 0.55 * smooth(-sunAlt, 5, 12),
-    },
-    geomMode: geomDelta < 0.9 ? 'opening' : geomDelta < 1.85 ? 'horn' : 'behind',
+    crescent: gauss(fraction, 0.18, 0.13),
+    sep: gauss(sep, 2.5, 4.0),
+    bright: clamp01(0.15 + 0.85 * (1.6 - mag) / 5.1),
+    alt: 0.25 + 0.75 * smooth(minAlt, 3, 25),
+    dark: 0.45 + 0.55 * smooth(-sunAlt, 5, 12),
   }
 }
 
@@ -258,13 +260,15 @@ export function createScan(observer, startDate, endDate, opts = {}) {
         const compDir = project(st.hor.azimuth, st.hor.altitude)
         const compAngle = Math.atan2(compDir.y, compDir.x)
         const geomDelta = angDiff(compAngle, openingAngle)
+        const gate = geomGate(geomDelta)
+        if (gate <= 0) continue // star behind the crescent's back — not a flag
 
-        const { parts, geomMode } = scoreParts({
-          fraction: mi.fraction, sep, mag, geomDelta,
+        const parts = scoreParts({
+          fraction: mi.fraction, sep, mag,
           minAlt: Math.min(moon.hor.altitude, st.hor.altitude),
           sunAlt: sun.hor.altitude,
         })
-        const score = flagScore(parts)
+        const score = flagScore(parts) * gate
 
         const sample = {
           time: date, body: cand.name, kind: cand.kind, mag, sep,
@@ -272,8 +276,9 @@ export function createScan(observer, startDate, endDate, opts = {}) {
           moonAlt: moon.hor.altitude, moonAz: moon.hor.azimuth,
           compAlt: st.hor.altitude, compAz: st.hor.azimuth,
           sunAlt: sun.hor.altitude,
-          sunAngle, compAngle, geomDelta,
-          score, parts, geomMode,
+          sunAngle, compAngle, geomDelta, gate,
+          score, parts,
+          geomMode: geomDelta < 0.9 ? 'opening' : 'horn',
           apparition: mi.waxing ? 'evening' : 'dawn',
         }
 
