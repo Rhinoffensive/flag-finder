@@ -44,10 +44,10 @@ Weighted geometric mean — one bad component sinks the score:
 
 | Component | Weight | Ideal |
 | --- | --- | --- |
-| Crescent thinness | 0.27 | ~18% illuminated |
-| Angular separation | 0.23 | ~2.5° |
-| Companion brightness | 0.22 | Venus-class (mag −4) |
-| Flag geometry | 0.12 | companion off the crescent's dark opening (classic flag) **or** right by one of the crescent's sharp horn tips — whichever fits better |
+| Crescent thinness | 0.24 | ~18% illuminated |
+| Angular separation | 0.21 | ~2.5° |
+| Companion brightness | 0.21 | Venus-class (mag −4) |
+| Flag geometry | 0.18 | companion on the crescent's **concave side**: 1.0 centered in the opening, 0.55 at a horn tip, fading fast once it slips behind the lit limb — a star behind the crescent's back is the anti-flag |
 | Altitude | 0.10 | 25°+ above horizon |
 | Sky darkness | 0.06 | Sun 12°+ below horizon |
 

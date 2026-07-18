@@ -151,29 +151,31 @@ const angDiff = (a, b) => { let d = (a - b) % (2 * Math.PI); if (d > Math.PI) d 
 // Weighted geometric mean: any single terrible component sinks the score,
 // which is right — a full moon next to Venus is pretty, but it is not a flag.
 function flagScore(parts) {
-  const weights = { crescent: 0.27, sep: 0.23, bright: 0.22, geom: 0.12, alt: 0.10, dark: 0.06 }
+  const weights = { crescent: 0.24, sep: 0.21, bright: 0.21, geom: 0.18, alt: 0.10, dark: 0.06 }
   let ln = 0
   for (const [k, w] of Object.entries(weights)) ln += w * Math.log(Math.max(0.02, parts[k]))
   return 100 * Math.exp(ln)
 }
 
-// Two flag-like placements: the companion off the crescent's dark opening
-// (the classic flag layout), or right by one of the crescent's sharp horns.
-// The geometry component takes whichever fits better.
-export function scoreParts({ fraction, sep, mag, geomDelta, hornDelta, minAlt, sunAlt }) {
-  const opening = ((1 + Math.cos(geomDelta)) / 2) ** 1.3
-  const cosH = Math.cos(hornDelta)
-  const horn = cosH > 0 ? cosH * cosH : 0 // 1 at a cusp, 0 by 90° away
+// The flag puts the star on the crescent's CONCAVE side — framed between the
+// horns, ideally centered on the opening; a companion behind the lit back is
+// the anti-flag. geomDelta measures the angle from the opening direction:
+// 0 = centered in the opening, 90° = at a horn tip, 180° = behind the back.
+export function scoreParts({ fraction, sep, mag, geomDelta, minAlt, sunAlt }) {
+  const c = Math.cos(geomDelta)
+  const geom = c >= 0
+    ? 0.55 + 0.45 * c          // concave side: 1.0 opening-center … 0.55 horn tip
+    : 0.55 * (1 + c) ** 1.6    // convex side: fades fast behind the lit limb
   return {
     parts: {
       crescent: gauss(fraction, 0.18, 0.13),
       sep: gauss(sep, 2.5, 4.0),
       bright: clamp01(0.15 + 0.85 * (1.6 - mag) / 5.1),
-      geom: Math.max(opening, horn),
+      geom,
       alt: 0.25 + 0.75 * smooth(minAlt, 3, 25),
       dark: 0.45 + 0.55 * smooth(-sunAlt, 5, 12),
     },
-    geomMode: horn > opening ? 'horn' : 'opening',
+    geomMode: geomDelta < 0.9 ? 'opening' : geomDelta < 1.85 ? 'horn' : 'behind',
   }
 }
 
@@ -256,13 +258,9 @@ export function createScan(observer, startDate, endDate, opts = {}) {
         const compDir = project(st.hor.azimuth, st.hor.altitude)
         const compAngle = Math.atan2(compDir.y, compDir.x)
         const geomDelta = angDiff(compAngle, openingAngle)
-        const hornDelta = Math.min(
-          angDiff(compAngle, sunAngle + Math.PI / 2),
-          angDiff(compAngle, sunAngle - Math.PI / 2),
-        )
 
         const { parts, geomMode } = scoreParts({
-          fraction: mi.fraction, sep, mag, geomDelta, hornDelta,
+          fraction: mi.fraction, sep, mag, geomDelta,
           minAlt: Math.min(moon.hor.altitude, st.hor.altitude),
           sunAlt: sun.hor.altitude,
         })
@@ -274,7 +272,7 @@ export function createScan(observer, startDate, endDate, opts = {}) {
           moonAlt: moon.hor.altitude, moonAz: moon.hor.azimuth,
           compAlt: st.hor.altitude, compAz: st.hor.azimuth,
           sunAlt: sun.hor.altitude,
-          sunAngle, compAngle, geomDelta, hornDelta,
+          sunAngle, compAngle, geomDelta,
           score, parts, geomMode,
           apparition: mi.waxing ? 'evening' : 'dawn',
         }

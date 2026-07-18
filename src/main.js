@@ -105,9 +105,9 @@ function renderResults() {
   el.innerHTML = list.map((ev) => {
     const [label, cls] = grade(ev.score)
     const past = ev.time < Date.now()
-    const geomNote = ev.parts.geom > 0.55
-      ? (ev.geomMode === 'horn' ? '· star at the crescent’s sharp tip ✓' : '· star off the crescent’s opening ✓')
-      : ''
+    const geomNote = ev.geomMode === 'opening' ? '· star in the crescent’s opening ✓'
+      : ev.geomMode === 'horn' ? '· star beside a horn tip ✓'
+      : '· star behind the crescent’s back'
     return `
     <article class="card ${past ? 'past' : ''}">
       <div class="scene">${renderScene(ev)}</div>
