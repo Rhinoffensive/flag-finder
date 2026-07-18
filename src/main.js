@@ -4,22 +4,15 @@ import {
   phaseName, compass, brightLimbAngle,
 } from './astro.js'
 import { renderScene, renderMiniMoon } from './scene.js'
+import { PRESETS, loadPrefs, savePrefs } from './prefs.js'
 
 const $ = (sel) => document.querySelector(sel)
 
-const PRESETS = [
-  { name: 'Auckland', lat: -36.8485, lon: 174.7633, tz: 'Pacific/Auckland' },
-  { name: 'Wellington', lat: -41.2866, lon: 174.7756, tz: 'Pacific/Auckland' },
-  { name: 'Istanbul', lat: 41.0082, lon: 28.9784, tz: 'Europe/Istanbul' },
-  { name: 'Ankara', lat: 39.9334, lon: 32.8597, tz: 'Europe/Istanbul' },
-  { name: 'Sydney', lat: -33.8688, lon: 151.2093, tz: 'Australia/Sydney' },
-  { name: 'London', lat: 51.5074, lon: -0.1278, tz: 'Europe/London' },
-]
-
+const saved = loadPrefs()
 const state = {
-  lat: PRESETS[0].lat,
-  lon: PRESETS[0].lon,
-  tz: PRESETS[0].tz,
+  lat: saved?.lat ?? PRESETS[0].lat,
+  lon: saved?.lon ?? PRESETS[0].lon,
+  tz: saved?.tz ?? PRESETS[0].tz,
   months: 12,
   minScore: 40,
   sort: 'date',
@@ -76,6 +69,24 @@ function startScan() {
 // ---------- results ----------
 const grade = (s) => s >= 78 ? ['textbook ay-yıldız', 'g4'] : s >= 62 ? ['excellent', 'g3'] : s >= 48 ? ['good', 'g2'] : ['loose match', 'g1']
 
+// Pre-filled Google Calendar link; the user reviews and saves it themselves.
+function gcalUrl(ev) {
+  const stamp = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+  const end = new Date(Math.max(ev.windowEnd.getTime(), ev.windowStart.getTime() + 30 * 60000))
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `Crescent Moon × ${ev.body} — Turkish-flag sky scene (${Math.round(ev.score)}/100)`,
+    dates: `${stamp(ev.windowStart)}/${stamp(end)}`,
+    details:
+      `Ay★Yıldız flag scene: ${Math.round(ev.moonFraction * 100)}% crescent Moon ` +
+      `${ev.sep.toFixed(1)}° from ${ev.body} (mag ${ev.mag.toFixed(1)}).\n` +
+      `Best moment ${fmtDate(ev.time)} ${fmtTime(ev.time)} (${state.tz}).\n` +
+      `Look ${compass(ev.moonAz)} (az ${Math.round(ev.moonAz)}°), ${Math.round(ev.moonAlt)}° above the horizon.`,
+    location: `${state.lat.toFixed(4)}, ${state.lon.toFixed(4)}`,
+  })
+  return `https://calendar.google.com/calendar/render?${params.toString()}`
+}
+
 function renderResults() {
   const list = state.events
     .filter((e) => e.score >= state.minScore)
@@ -94,7 +105,9 @@ function renderResults() {
   el.innerHTML = list.map((ev) => {
     const [label, cls] = grade(ev.score)
     const past = ev.time < Date.now()
-    const geomOk = ev.parts.geom > 0.55
+    const geomNote = ev.parts.geom > 0.55
+      ? (ev.geomMode === 'horn' ? '· star at the crescent’s sharp tip ✓' : '· star off the crescent’s opening ✓')
+      : ''
     return `
     <article class="card ${past ? 'past' : ''}">
       <div class="scene">${renderScene(ev)}</div>
@@ -102,12 +115,13 @@ function renderResults() {
         <div class="card-top">
           <span class="badge ${cls}">${Math.round(ev.score)} · ${label}</span>
           ${past ? `<span class="badge past-badge">past</span>` : ''}
+          ${past ? '' : `<a class="gcal" href="${gcalUrl(ev)}" target="_blank" rel="noreferrer" title="Add to Google Calendar">📅 Calendar</a>`}
         </div>
         <h3>Moon × ${ev.body}</h3>
         <p class="when">${fmtDate(ev.time)} · best ${fmtTime(ev.time)} <span class="dim">(${relativeNight(ev.time)}, ${ev.apparition} sky)</span></p>
         <p class="details">
           ${Math.round(ev.moonFraction * 100)}% crescent · ${ev.sep.toFixed(1)}° apart ·
-          ${ev.body} mag ${ev.mag.toFixed(1)} ${geomOk ? '· star off the crescent’s opening ✓' : ''}
+          ${ev.body} mag ${ev.mag.toFixed(1)} ${geomNote}
         </p>
         <p class="details dim">
           Look ${compass(ev.moonAz)} (az ${Math.round(ev.moonAz)}°), ${Math.round(ev.moonAlt)}° above the horizon ·
@@ -182,12 +196,15 @@ function applyLocation(lat, lon, tz) {
   $('#lat').value = lat.toFixed(4)
   $('#lon').value = lon.toFixed(4)
   $('#tz-note').textContent = `times shown in ${state.tz}`
+  savePrefs({ lat: state.lat, lon: state.lon, tz: state.tz })
 }
 
 function init() {
   const presetSel = $('#preset')
   presetSel.innerHTML = PRESETS.map((p, i) => `<option value="${i}">${p.name}</option>`).join('')
     + `<option value="custom">Custom…</option>`
+  const savedIdx = PRESETS.findIndex((p) => Math.abs(p.lat - state.lat) < 1e-6 && Math.abs(p.lon - state.lon) < 1e-6)
+  presetSel.value = savedIdx >= 0 ? String(savedIdx) : 'custom'
   presetSel.onchange = () => {
     const p = PRESETS[Number(presetSel.value)]
     if (p) { applyLocation(p.lat, p.lon, p.tz); startScan(); refreshNight() }

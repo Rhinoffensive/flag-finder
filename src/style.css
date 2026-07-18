@@ -30,6 +30,16 @@ main { max-width: 1080px; margin: 0 auto; padding: 0 20px 48px; }
 .hero h1 { margin: 6px 0 8px; letter-spacing: 0.35em; font-size: 28px; font-weight: 700; }
 .hero h1 .star { color: var(--red); }
 .tagline { color: var(--dim); max-width: 560px; margin: 0 auto; }
+.hero.compact { padding-top: 28px; }
+.hero.compact h1 { font-size: 22px; }
+
+nav.pages { display: flex; justify-content: center; gap: 8px; margin: 10px 0 12px; }
+nav.pages a {
+  color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 600;
+  padding: 6px 14px; border: 1px solid var(--line); border-radius: 20px;
+}
+nav.pages a:hover { color: var(--text); border-color: #2c3c63; }
+nav.pages a.active { background: var(--red); border-color: var(--red); color: #fff; }
 
 /* ---------- panels & controls ---------- */
 .panel {
@@ -122,6 +132,36 @@ tr.below td { color: var(--dim); }
 tr.below-head td { color: var(--dim); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.08em; padding-top: 14px; border-bottom: none; }
 
 .dim { color: var(--dim); }
+
+/* ---------- calendar button ---------- */
+.gcal {
+  margin-left: auto; font-size: 11.5px; font-weight: 600; text-decoration: none;
+  color: var(--text); border: 1px solid var(--line); border-radius: 20px; padding: 3px 10px;
+  white-space: nowrap;
+}
+.gcal:hover { border-color: var(--red); color: #fff; }
+
+/* ---------- sky view chart ---------- */
+.chart-panel { padding: 10px 14px 14px; }
+#chart svg { display: block; width: 100%; height: auto; }
+.control.grow { flex: 1; min-width: 260px; }
+.grid-v, .grid-h { stroke: #1a2440; stroke-width: 1; }
+.grid-h { stroke-dasharray: 3 5; }
+.horizon { stroke: #4a5878; stroke-width: 1.5; }
+.axis { fill: #7c88a3; font: 11px system-ui, sans-serif; }
+.trail { fill: none; stroke-width: 1.4; opacity: 0.35; }
+.trail-moon { stroke: var(--gold); stroke-width: 2; }
+.trail-planet { stroke: #e8c56a; }
+.trail-star { stroke: #6f8cc4; stroke-width: 1; }
+.trail-sun { stroke: #ff6b5e; stroke-dasharray: 4 6; opacity: 0.5; }
+.dot { stroke: none; }
+.dot-planet { fill: #ffd98a; }
+.dot-star { fill: #b9cdf2; }
+.dot-sun { fill: #ff8f5e; }
+.marker-label { fill: #cfd9ee; font: 600 10.5px system-ui, sans-serif; }
+.moon-label { fill: var(--gold); }
+.pair-line { stroke: var(--red-soft); stroke-width: 1; stroke-dasharray: 5 4; opacity: 0.8; }
+#pair-note { color: var(--red-soft); font-weight: 600; min-height: 1.2em; }
 
 footer { text-align: center; color: #5b6478; font-size: 12.5px; padding: 18px 20px 40px; }
 footer a { color: #8494b8; }

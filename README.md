@@ -8,12 +8,27 @@ brightest-objects list for any night.
 
 Inspired by the crescent–Venus conjunction over Auckland on 17 July 2026.
 
+## Pages
+
+- **Scene finder** (`/`) — ranked flag scenes with true-orientation previews and
+  “Add to Google Calendar” buttons for upcoming events.
+- **Sky view** (`/sky.html`) — pick a night, scrub or play the time slider, and
+  watch the Moon, planets and bright stars trace their trajectories; flags any
+  Moon–companion pairing within 15° as you scrub.
+
 ## Run
 
 ```bash
 npm install
 npm run dev       # web app on http://localhost:5173
 ```
+
+## Deploy to GitHub Pages
+
+Pushing to `main` triggers `.github/workflows/deploy.yml`, which builds the site
+and publishes it to GitHub Pages (no manual setup needed beyond the repo being
+able to use Pages — public repo, or private with a paid plan). The published URL
+is `https://<owner>.github.io/<repo>/`.
 
 CLI (same engine, good for scripting/verification):
 
@@ -32,7 +47,7 @@ Weighted geometric mean — one bad component sinks the score:
 | Crescent thinness | 0.27 | ~18% illuminated |
 | Angular separation | 0.23 | ~2.5° |
 | Companion brightness | 0.22 | Venus-class (mag −4) |
-| Flag geometry | 0.12 | companion off the crescent's dark opening, like the flag |
+| Flag geometry | 0.12 | companion off the crescent's dark opening (classic flag) **or** right by one of the crescent's sharp horn tips — whichever fits better |
 | Altitude | 0.10 | 25°+ above horizon |
 | Sky darkness | 0.06 | Sun 12°+ below horizon |
 

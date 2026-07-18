@@ -2,8 +2,9 @@
 // Pure module (no DOM) so it runs both in the browser and in Node CLI scripts.
 import * as AEmod from 'astronomy-engine'
 
-// astronomy-engine ships CJS; interop differs between Vite and Node.
-const AE = AEmod.Observer ? AEmod : AEmod.default
+// astronomy-engine resolves to true ESM under Vite (named exports) but to a
+// CJS namespace under Node; the computed access keeps Rollup from warning.
+const AE = AEmod.Observer ? AEmod : AEmod['default']
 
 const D2R = Math.PI / 180
 const R2D = 180 / Math.PI
@@ -105,6 +106,23 @@ function starState(star, date, observer) {
   return { eq, hor }
 }
 
+// Public alt/az lookups used by the sky-trajectory view.
+export function bodyAltAz(name, date, observer) {
+  const { hor } = bodyState(name, date, observer)
+  return { az: hor.azimuth, alt: hor.altitude }
+}
+
+export function starAltAz(star, date, observer) {
+  const { hor } = starState(star, date, observer)
+  return { az: hor.azimuth, alt: hor.altitude }
+}
+
+// True angular separation between two horizontal positions, degrees.
+export function sepAltAz(a, b) {
+  const d = dot(enu(a.az, a.alt), enu(b.az, b.alt))
+  return Math.acos(Math.min(1, Math.max(-1, d))) * R2D
+}
+
 export function moonInfo(date) {
   const ill = AE.Illumination(AE.Body.Moon, date)
   const phaseLon = AE.MoonPhase(date) // 0 new, 90 first quarter, 180 full
@@ -139,14 +157,23 @@ function flagScore(parts) {
   return 100 * Math.exp(ln)
 }
 
-export function scoreParts({ fraction, sep, mag, geomDelta, minAlt, sunAlt }) {
+// Two flag-like placements: the companion off the crescent's dark opening
+// (the classic flag layout), or right by one of the crescent's sharp horns.
+// The geometry component takes whichever fits better.
+export function scoreParts({ fraction, sep, mag, geomDelta, hornDelta, minAlt, sunAlt }) {
+  const opening = ((1 + Math.cos(geomDelta)) / 2) ** 1.3
+  const cosH = Math.cos(hornDelta)
+  const horn = cosH > 0 ? cosH * cosH : 0 // 1 at a cusp, 0 by 90° away
   return {
-    crescent: gauss(fraction, 0.18, 0.13),
-    sep: gauss(sep, 2.5, 4.0),
-    bright: clamp01(0.15 + 0.85 * (1.6 - mag) / 5.1),
-    geom: ((1 + Math.cos(geomDelta)) / 2) ** 1.3,
-    alt: 0.25 + 0.75 * smooth(minAlt, 3, 25),
-    dark: 0.45 + 0.55 * smooth(-sunAlt, 5, 12),
+    parts: {
+      crescent: gauss(fraction, 0.18, 0.13),
+      sep: gauss(sep, 2.5, 4.0),
+      bright: clamp01(0.15 + 0.85 * (1.6 - mag) / 5.1),
+      geom: Math.max(opening, horn),
+      alt: 0.25 + 0.75 * smooth(minAlt, 3, 25),
+      dark: 0.45 + 0.55 * smooth(-sunAlt, 5, 12),
+    },
+    geomMode: horn > opening ? 'horn' : 'opening',
   }
 }
 
@@ -229,9 +256,13 @@ export function createScan(observer, startDate, endDate, opts = {}) {
         const compDir = project(st.hor.azimuth, st.hor.altitude)
         const compAngle = Math.atan2(compDir.y, compDir.x)
         const geomDelta = angDiff(compAngle, openingAngle)
+        const hornDelta = Math.min(
+          angDiff(compAngle, sunAngle + Math.PI / 2),
+          angDiff(compAngle, sunAngle - Math.PI / 2),
+        )
 
-        const parts = scoreParts({
-          fraction: mi.fraction, sep, mag, geomDelta,
+        const { parts, geomMode } = scoreParts({
+          fraction: mi.fraction, sep, mag, geomDelta, hornDelta,
           minAlt: Math.min(moon.hor.altitude, st.hor.altitude),
           sunAlt: sun.hor.altitude,
         })
@@ -243,8 +274,8 @@ export function createScan(observer, startDate, endDate, opts = {}) {
           moonAlt: moon.hor.altitude, moonAz: moon.hor.azimuth,
           compAlt: st.hor.altitude, compAz: st.hor.azimuth,
           sunAlt: sun.hor.altitude,
-          sunAngle, compAngle, geomDelta,
-          score, parts,
+          sunAngle, compAngle, geomDelta, hornDelta,
+          score, parts, geomMode,
           apparition: mi.waxing ? 'evening' : 'dawn',
         }
 

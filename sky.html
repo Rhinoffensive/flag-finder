@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sky view — Ay ★ Yıldız</title>
+</head>
+<body>
+  <header class="hero compact">
+    <h1>AY <span class="star">★</span> YILDIZ</h1>
+    <nav class="pages">
+      <a href="./">Scene finder</a>
+      <a href="./sky.html" class="active">Sky view</a>
+    </nav>
+    <p class="tagline">Pick a night, scrub the time, and watch the Moon, planets and bright
+      stars trace their paths across the sky.</p>
+  </header>
+
+  <main>
+    <section class="panel controls">
+      <div class="control">
+        <label for="preset">Location</label>
+        <select id="preset"></select>
+      </div>
+      <div class="control coords">
+        <label>Lat / Lon</label>
+        <div class="row">
+          <input id="lat" type="number" step="0.0001" min="-89" max="89" />
+          <input id="lon" type="number" step="0.0001" min="-180" max="180" />
+        </div>
+      </div>
+      <div class="control">
+        <label for="night-date">Night of</label>
+        <input type="date" id="night-date" />
+      </div>
+      <div class="control">
+        <label for="show-stars">Bright stars</label>
+        <input type="checkbox" id="show-stars" checked style="width:22px;height:22px" />
+      </div>
+      <div class="control grow">
+        <label for="time-slider">Time <strong id="time-readout"></strong> <span id="sun-note" class="dim"></span></label>
+        <div class="row">
+          <button id="play-btn" title="Play the night">▶</button>
+          <input type="range" id="time-slider" step="300000" style="flex:1" />
+        </div>
+      </div>
+    </section>
+
+    <section class="panel chart-panel">
+      <div id="chart"></div>
+      <p class="note" id="pair-note"></p>
+      <p class="note dim">Solid dots mark positions at the selected time; faint trails show each object’s
+        path through the night (sunset to sunrise). The Moon is drawn with its true crescent
+        orientation. Azimuth runs west-to-east the way you’d scan the horizon; altitude is height above it.</p>
+    </section>
+  </main>
+
+  <footer>
+    Positions computed locally with <a href="https://github.com/cosinekitty/astronomy" target="_blank" rel="noreferrer">astronomy-engine</a>
+    (±1 arcminute vs. JPL ephemerides) · topocentric, refraction-corrected.
+  </footer>
+
+  <script type="module" src="/src/sky.js"></script>
+</body>
+</html>
